@@ -11,6 +11,41 @@
 char prompt[MAX_PATH_SIZE] = "\w$";
 char path[MAX_PATH_SIZE] = "/usr/bin";
 
+// Custom execvp function
+int custom_execvp(char *cmd, char **args) {
+    // Check if the command is an absolute path
+    if (cmd[0] == '/') {
+        // Absolute path, try executing directly
+        execv(cmd, args);
+    } else {
+        // Relative path or just the command name
+        char *token;
+        char *path_copy = strdup(path); // Duplicate the PATH variable
+
+        // Tokenize the PATH variable
+        token = strtok(path_copy, ":");
+        while (token != NULL) {
+            char full_path[MAX_PATH_SIZE];
+            snprintf(full_path, sizeof(full_path), "%s/%s", token, cmd);
+
+            // Try executing the command with the current path
+            execv(full_path, args);
+
+            // Move to the next path in PATH
+            token = strtok(NULL, ":");
+        }
+
+        free(path_copy); // Free the duplicated PATH variable
+
+        // If we reach here, the command was not found in any path
+        return -1;
+    }
+
+    // execv should not return, so if it does, it indicates an error
+    return -1;
+}
+
+
 void display_prompt() {
     char cwd[MAX_PATH_SIZE];
     if (getcwd(cwd, sizeof(cwd)) != NULL) {
@@ -48,27 +83,10 @@ void execute_command(char **args) {
 
     if ((pid = fork()) == 0) {
         // Child process
-        char command[MAX_PATH_SIZE] = "";
-        for (int i = 0; args[i] != NULL; i++) {
-            strcat(command, args[i]);
-            strcat(command, " ");
+        if (custom_execvp(args[0], args) == -1) {
+            perror("Command not found");
+            exit(EXIT_FAILURE);
         }
-
-        char *token;
-        token = strtok(command, " ");
-        while (token != NULL) {
-            char full_path[MAX_PATH_SIZE];
-            snprintf(full_path, sizeof(full_path), "%s/%s", path, token);
-
-            if (access(full_path, X_OK) == 0) {
-                execv(full_path, args);
-            }
-
-            token = strtok(NULL, " ");
-        }
-
-        perror("Command not found");
-        exit(EXIT_FAILURE);
     } else if (pid < 0) {
         perror("fork");
     } else {
@@ -78,6 +96,7 @@ void execute_command(char **args) {
         } while (!WIFEXITED(status) && !WIFSIGNALED(status));
     }
 }
+
 
 int main() {
     char input[MAX_INPUT_SIZE];
