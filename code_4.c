@@ -102,7 +102,7 @@ int main() {
     char input[MAX_INPUT_SIZE];
     char *args[MAX_ARG_SIZE];
     char *token;
-
+    // ls < file1.txt
     while (1) {
         display_prompt();
         if (fgets(input, sizeof(input), stdin) == NULL || strcmp(input, "exit\n") == 0) {
