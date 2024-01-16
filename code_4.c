@@ -46,26 +46,42 @@ int custom_execvp(char *cmd, char **args) {
 }
 
 
-void display_prompt() {
-    char cwd[MAX_PATH_SIZE];
-    if (getcwd(cwd, sizeof(cwd)) != NULL) {
-        snprintf(prompt, sizeof(prompt), "%s$", cwd);
-        printf("%s ", prompt);
+void display_prompt(const char *custom_prompt) {
+    char prompt_to_display[MAX_PATH_SIZE];
+
+    if (custom_prompt != NULL) {
+        // Use the provided custom prompt
+        snprintf(prompt_to_display, sizeof(prompt_to_display), "%s", custom_prompt);
     } else {
-        perror("getcwd");
-        exit(EXIT_FAILURE);
+        // Get the current working directory
+        if (getcwd(prompt_to_display, sizeof(prompt_to_display)) == NULL) {
+            perror("getcwd");
+            exit(EXIT_FAILURE);
+        }
     }
+
+    // Print the prompt
+    printf("%s$ ", prompt_to_display);
 }
 
+
 void set_prompt(char *new_prompt) {
+    printf("new_prompt = %s\n", new_prompt);
+
     if (new_prompt == NULL || strlen(new_prompt) == 0) {
         printf("Invalid PS1: Missing prompt string\n");
         return;
     }
 
-    strncpy(prompt, new_prompt, sizeof(prompt));
-    prompt[sizeof(prompt) - 1] = '\0';
+    // Directly set the prompt
+    snprintf(prompt, sizeof(prompt), "%s", new_prompt); // Skip "PS1="
+    printf("Prompt set to: %s\n", prompt);
 }
+
+
+
+
+
 
 void set_path(char *new_path) {
     if (new_path == NULL || strlen(new_path) == 0) {
@@ -103,8 +119,10 @@ int main() {
     char *args[MAX_ARG_SIZE];
     char *token;
 
+    // Initial display with current working directory
+    display_prompt(NULL);
+
     while (1) {
-        display_prompt();
         if (fgets(input, sizeof(input), stdin) == NULL || strcmp(input, "exit\n") == 0) {
             printf("Exiting shell...\n");
             break;
@@ -128,7 +146,10 @@ int main() {
                     }
                 }
             } else if (strncmp(args[0], "PS1=", 4) == 0) {
+                // Setting the prompt here
                 set_prompt(args[0] + 4);
+                // Display the updated prompt
+                display_prompt(prompt);
             } else if (strncmp(args[0], "PATH=", 5) == 0) {
                 set_path(args[0] + 5);
             } else {
