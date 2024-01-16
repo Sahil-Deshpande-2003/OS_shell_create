@@ -119,8 +119,12 @@ int main() {
     char *args[MAX_ARG_SIZE];
     char *token;
 
+
     // Initial display with current working directory
     display_prompt(NULL);
+
+
+    // ls < file1.txt
 
     while (1) {
         if (fgets(input, sizeof(input), stdin) == NULL || strcmp(input, "exit\n") == 0) {
