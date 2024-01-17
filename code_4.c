@@ -13,7 +13,6 @@
 char prompt[MAX_PATH_SIZE] = "\w$";
 char path[MAX_PATH_SIZE] = "/usr/bin:/bin:/sbin";
 
-
 void print_path_contents() {
     char *token;
     char *path_copy = strdup(path);
@@ -21,25 +20,20 @@ void print_path_contents() {
     token = strtok(path_copy, ":");
     while (token != NULL) {
         printf("Contents of %s:\n", token);
-
         DIR *dir = opendir(token);
         if (dir) {
             struct dirent *entry;
             while ((entry = readdir(dir)) != NULL) {
                 printf("%s\n", entry->d_name);
             }
-
             closedir(dir);
         } else {
             perror("opendir");
         }
-
         token = strtok(NULL, ":");
     }
-
     free(path_copy);
 }
-
 
 int custom_execvp(char *cmd, char **args) {
     if (cmd[0] == '/') {
@@ -52,47 +46,29 @@ int custom_execvp(char *cmd, char **args) {
         while (token != NULL) {
             char full_path[MAX_PATH_SIZE];
             snprintf(full_path, sizeof(full_path), "%s/%s", token, cmd);
-
             if (access(full_path, X_OK) == 0) {
                 execv(full_path, args);
             }
-
             token = strtok(NULL, ":");
         }
-
         free(path_copy);
-
         fprintf(stderr, "%s: No such file or directory\n", cmd);
         exit(EXIT_FAILURE);
     }
-
     perror("execv");
     exit(EXIT_FAILURE);
 }
 
 void display_prompt(const char *custom_prompt) {
-    char prompt_to_display[MAX_PATH_SIZE];
+    // printf("Accessing prompt1: %s\n", custom_prompt);
 
-    if (custom_prompt != NULL && strcmp(custom_prompt, "\\w$") == 0) {
-        display_prompt(NULL);
-        return;
-    }
-
-    if (custom_prompt != NULL) {
-        snprintf(prompt_to_display, sizeof(prompt_to_display), "%s", custom_prompt);
-        if (prompt_to_display[strlen(prompt_to_display) - 1] != '$') {
-            strcat(prompt_to_display, "$");
-        }
+    if (custom_prompt[strlen(custom_prompt) - 2] != '$') {
+        printf("%s $ ", custom_prompt);
     } else {
-        if (getcwd(prompt_to_display, sizeof(prompt_to_display)) == NULL) {
-            perror("getcwd");
-            exit(EXIT_FAILURE);
-        }
-        strcat(prompt_to_display, "$");
+        printf("%s ", custom_prompt);
     }
-
-    printf("%s ", prompt_to_display);
 }
+
 
 void set_prompt(char *new_prompt) {
     if (new_prompt == NULL || strlen(new_prompt) == 0) {
@@ -101,13 +77,18 @@ void set_prompt(char *new_prompt) {
     }
 
     if (strcmp(new_prompt, "\"\\w$\"") == 0) {
-        display_prompt(NULL);
+        getcwd(prompt, MAX_PATH_SIZE);
+        printf("Reset marne par prompt = %s\n",prompt);
+        display_prompt(prompt);
     } else {
+         strcpy(prompt, new_prompt);
+        printf("prompt after changign in set_prompt = %s\n",prompt);
         display_prompt(new_prompt);
     }
 
-    snprintf(prompt, sizeof(prompt), "%s", new_prompt);
+    // snprintf(prompt, sizeof(prompt), "%s", new_prompt);
 }
+
 void set_path(char *new_path) {
     if (new_path == NULL || strlen(new_path) == 0) {
         printf("Invalid PATH: Missing path string\n");
@@ -143,6 +124,7 @@ void execute_command(char **args) {
     pid_t pid, wpid;
     int status;
 
+    // printf("Accessing prompt2: %s\n", prompt);
     printf("Executing command with PATH: %s\n", path);
 
     if ((pid = fork()) == 0) {
@@ -163,10 +145,14 @@ int main() {
     char input[MAX_INPUT_SIZE];
     char *args[MAX_ARG_SIZE];
     char *token;
-
-    display_prompt(NULL);
+    getcwd(prompt, MAX_PATH_SIZE);
+    // printf("Accessing prompt3: %s\n", prompt);
+    display_prompt(prompt);
 
     while (1) {
+
+        // printf("At the start of loop, prompt = %s\n",prompt);
+
         if (fgets(input, sizeof(input), stdin) == NULL || strcmp(input, "exit\n") == 0) {
             printf("Exiting shell...\n");
             break;
@@ -190,17 +176,22 @@ int main() {
                     }
                 }
             } else if (strncmp(args[0], "PS1=", 4) == 0) {
+                // printf("Accessing prompt4: %s\n", args[0] + 4);
                 set_prompt(args[0] + 4);
             } else if (strncmp(args[0], "PATH=", 5) == 0) {
                 set_path(args[0] + 5);
-                print_path_contents(); 
+                print_path_contents();
             } else {
                 execute_command(args);
+                // printf("Accessing prompt5: %s\n", prompt);
                 display_prompt(prompt);
             }
         } else {
+            // printf("Accessing prompt6: %s\n", prompt);
             display_prompt(prompt);
         }
+
+        //  printf("At the end of loop, prompt = %s\n",prompt);
     }
 
     return 0;
