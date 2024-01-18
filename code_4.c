@@ -5,13 +5,29 @@
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <fcntl.h>
 
 #define MAX_INPUT_SIZE 1024
 #define MAX_ARG_SIZE 64
 #define MAX_PATH_SIZE 1024
-
+#define MAX_CMD_SIZE 50
+#define MAX_FILE_SIZE 50
 char prompt[MAX_PATH_SIZE] = "\w$";
 char path[MAX_PATH_SIZE] = "/usr/bin:/bin:/sbin";
+
+
+void removeSpacesAndNewlines(char *str) {
+    int length = strlen(str);
+    int i, j = 0;
+
+    for (i = 0; i < length; i++) {
+        if (str[i] != ' ' && str[i] != '\n') {
+            str[j++] = str[i];
+        }
+    }
+
+    str[j] = '\0';
+}
 
 void print_path_contents() {
     char *token;
@@ -142,23 +158,73 @@ void execute_command(char **args) {
 }
 
 int main() {
-    char input[MAX_INPUT_SIZE];
+    int p;
+      char *input = malloc(MAX_INPUT_SIZE);  // Dynamically allocate memory
     char *args[MAX_ARG_SIZE];
     char *token;
     getcwd(prompt, MAX_PATH_SIZE);
-    // printf("Accessing prompt3: %s\n", prompt);
     display_prompt(prompt);
-
+    char cmd[MAX_CMD_SIZE];
+    char file[MAX_FILE_SIZE];
     while (1) {
-
-        // printf("At the start of loop, prompt = %s\n",prompt);
-
-        if (fgets(input, sizeof(input), stdin) == NULL || strcmp(input, "exit\n") == 0) {
+        if (fgets(input, MAX_INPUT_SIZE, stdin) == NULL || strcmp(input, "exit\n") == 0) {
             printf("Exiting shell...\n");
             break;
         }
 
-        int i = 0;
+        char *redirection_symbol = strchr(input, '<');
+
+
+    if (redirection_symbol != NULL) {
+        // Input redirection is present, extract the command and file
+        *redirection_symbol = '\0';  // Separate the command
+
+        // Skip leading whitespaces in the command
+        while (*input == ' ' || *input == '\t') {
+            input++;
+        }
+        strcpy(cmd, input);
+        redirection_symbol++; // Move to the character after '<'
+        while (*redirection_symbol == ' ' || *redirection_symbol == '\t') {
+            redirection_symbol++;
+        }
+        strcpy(file, redirection_symbol);
+        // printf("file=%s\n",file);
+         p = fork();
+    if (p == 0) {
+        // Child process
+        close(0);
+
+        if (file[0] != '\0') {
+             removeSpacesAndNewlines(file);
+            int file_fd = open(file, O_RDONLY);
+            if (file_fd == -1) {
+                perror("open");
+                exit(EXIT_FAILURE);
+            }
+
+            dup2(file_fd, STDIN_FILENO);
+            close(file_fd);
+
+            
+        }
+            int len = strlen(cmd);
+while (len > 0 && (cmd[len - 1] == ' ' || cmd[len - 1] == '\t')) {
+    cmd[--len] = '\0';
+}
+
+            execlp(cmd,cmd,file, NULL);
+        perror("execlp");
+        exit(EXIT_FAILURE);
+    } else {
+        wait(NULL);
+    }
+    printf("\n");
+    display_prompt(prompt);
+    // free(input);
+    }
+
+    else{int i = 0;
         token = strtok(input, " \t\n");
         while (token != NULL && i < MAX_ARG_SIZE - 1) {
             args[i++] = token;
@@ -176,23 +242,24 @@ int main() {
                     }
                 }
             } else if (strncmp(args[0], "PS1=", 4) == 0) {
-                // printf("Accessing prompt4: %s\n", args[0] + 4);
                 set_prompt(args[0] + 4);
             } else if (strncmp(args[0], "PATH=", 5) == 0) {
                 set_path(args[0] + 5);
                 print_path_contents();
             } else {
                 execute_command(args);
-                // printf("Accessing prompt5: %s\n", prompt);
                 display_prompt(prompt);
             }
         } else {
-            // printf("Accessing prompt6: %s\n", prompt);
             display_prompt(prompt);
         }
-
-        //  printf("At the end of loop, prompt = %s\n",prompt);
     }
 
+    // free(input);  // Don't forget to free the allocated memory
+    }
+
+    free(input);
+
+        
     return 0;
 }
