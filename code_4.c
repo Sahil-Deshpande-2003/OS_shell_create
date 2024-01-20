@@ -17,7 +17,7 @@
 char prompt[MAX_PATH_SIZE] = "\w$";
 char path[MAX_PATH_SIZE] = "/usr/bin:/bin:/sbin";
 
-
+// dekh
 void removeSpacesAndNewlines(char *str) {
     int length = strlen(str);
     int i, j = 0;
