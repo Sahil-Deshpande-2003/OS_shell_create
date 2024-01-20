@@ -30,16 +30,16 @@ void removeSpacesAndNewlines(char *str) {
 
     str[j] = '\0';
 }
-int isFileExistsInPromptDirectory(char *filename) {
-    char full_path[MAX_PATH_SIZE];
-    snprintf(full_path, sizeof(full_path), "%s/%s", prompt, filename);
-    // printf("full_path=%s\n",full_path);
-    if (access(full_path, F_OK) == 0) {
-        return 1;  // File exists
-    }
+// int isFileExistsInPromptDirectory(char *filename) {
+//     char full_path[MAX_PATH_SIZE];
+//     snprintf(full_path, sizeof(full_path), "%s/%s", prompt, filename);
+//     // printf("full_path=%s\n",full_path);
+//     if (access(full_path, F_OK) == 0) {
+//         return 1;  // File exists
+//     }
 
-    return 0;  // File does not exist
-}
+//     return 0;  // File does not exist
+// }
 
 int isCommandValid(char *cmd) {
     char *token;
@@ -131,8 +131,8 @@ void performOutputRedirection(char *input) {
     if (redirection_symbol != NULL) {
         // Output redirection is present, extract the command and file
         *redirection_symbol = '\0';  // Separate the command
-        strcpy(cmd, input);
-
+        strcpy(cmd, input); // combine karte waqt cmd has to be cat file1.txt
+        printf("cmd=%s\n",cmd);
         // Remove spaces from the command
         removeSpacesAndNewlines(cmd);
 
@@ -140,7 +140,7 @@ void performOutputRedirection(char *input) {
         strcpy(file, redirection_symbol + 1);
         removeSpacesAndNewlines(file);
         // printf("file=%s\n", file);
-
+        printf("file=%s\n",file);
         pid_t pid = fork();
 
         if (pid == -1) {
@@ -445,12 +445,12 @@ int main() {
                         continue;
                     }
 
-                if (filename!=NULL&& !isFileExistsInPromptDirectory(filename)) {
+                // if (filename!=NULL&& !isFileExistsInPromptDirectory(filename)) {
 
-                    fprintf(stderr, "%s: File does not exist\n", filename);
-                    // display_prompt(prompt);
-                    continue;
-                }
+                //     fprintf(stderr, "%s: File does not exist\n", filename);
+                //     // display_prompt(prompt);
+                //     continue;
+                // }
                 // printf("I am here\n");
                 execute_command(args);
                 // printf("Printing prompt after checking if file and command are valid\n");
