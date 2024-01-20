@@ -9,6 +9,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
+#define MAX_STRING_SIZE 100
 #define MAX_INPUT_SIZE 1024
 #define MAX_ARG_SIZE 64
 #define MAX_PATH_SIZE 1024
@@ -23,7 +32,7 @@ void removeSpacesAndNewlines(char *str) {
     int i, j = 0;
 
     for (i = 0; i < length; i++) {
-        if (str[i] != ' ' && str[i] != '\n') {
+        if (str[i] != ' ' && str[i] != '\n'  && str[i]!='<' && str[i]!='>') {
             str[j++] = str[i];
         }
     }
@@ -40,6 +49,80 @@ void removeSpacesAndNewlines(char *str) {
 
 //     return 0;  // File does not exist
 // }
+void Redirection(char *input) {
+    // Tokenize the command to extract command, input file, and output file
+
+    int i = 0;
+    char command[MAX_STRING_SIZE] = "";
+    char inputFile[MAX_STRING_SIZE] = "";
+    char outputFile[MAX_STRING_SIZE] = "";
+
+    while (*input != '\0') {
+        while (*input != '\0' && *input != '<') {
+            strncat(command, &input[i], 1);
+            input++;
+        }
+
+        removeSpacesAndNewlines(command);
+
+        while (*input != '\0' && *input != '>') {
+            strncat(inputFile, &input[i], 1);
+            input++;
+        }
+        removeSpacesAndNewlines(inputFile);
+
+        while (*input != '\0') {
+            strncat(outputFile, &input[i], 1);
+            input++;
+        }
+        removeSpacesAndNewlines(outputFile);
+    }
+
+    // printf("Command:%s\n", command);
+    // printf("Input File:%s\n", inputFile ? inputFile : "(none)");
+    // printf("Output File:%s\n", outputFile ? outputFile : "(none)");
+
+    pid_t pid = fork();
+
+    if (pid == -1) {
+        perror("fork");
+        exit(EXIT_FAILURE);
+    } else if (pid == 0) {
+        // Child process
+
+        int inputFd, outputFd;
+
+        if (*inputFile != '\0') {
+            inputFd = open(inputFile, O_RDONLY);
+            if (inputFd == -1) {
+                perror("Error opening input file");
+                exit(EXIT_FAILURE);
+            }
+            dup2(inputFd, STDIN_FILENO);
+            close(inputFd);
+        }
+
+        if (*outputFile != '\0') {
+            outputFd = open(outputFile, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+            if (outputFd == -1) {
+                perror("Error opening output file");
+                exit(EXIT_FAILURE);
+            }
+            dup2(outputFd, STDOUT_FILENO);
+            close(outputFd);
+        }
+
+        char *args[] = {command, NULL};
+        execvp(command, args);
+
+        perror("execvp");
+        exit(EXIT_FAILURE);
+    } else {
+        // Parent process
+        wait(NULL);
+    }
+}
+
 
 int isCommandValid(char *cmd) {
     char *token;
@@ -132,7 +215,7 @@ void performOutputRedirection(char *input) {
         // Output redirection is present, extract the command and file
         *redirection_symbol = '\0';  // Separate the command
         strcpy(cmd, input); // combine karte waqt cmd has to be cat file1.txt
-        printf("cmd=%s\n",cmd);
+        // printf("cmd=%s\n",cmd);
         // Remove spaces from the command
         removeSpacesAndNewlines(cmd);
 
@@ -140,7 +223,7 @@ void performOutputRedirection(char *input) {
         strcpy(file, redirection_symbol + 1);
         removeSpacesAndNewlines(file);
         // printf("file=%s\n", file);
-        printf("file=%s\n",file);
+        // printf("file=%s\n",file);
         pid_t pid = fork();
 
         if (pid == -1) {
@@ -371,22 +454,27 @@ int main() {
         }
 
         char *redirection_symbol1 = strchr(input, '<');
+        char *redirection_symbol2 = strchr(input, '>');
+
+        if (redirection_symbol1!=NULL && redirection_symbol2!=NULL){
+            Redirection(input);
+            continue;
+        }
 
 
         if (redirection_symbol1 != NULL) {
-            printf("Inside 2nd if\n");
+            // printf("Inside 2nd if\n");
             performInputRedirection(input);
-            printf("I am here after i/p redirection\n");
+            // printf("I am here after i/p redirection\n");
             // display_prompt(prompt);
             continue;
         }
 
-        char *redirection_symbol2 = strchr(input, '>');
 
         if(redirection_symbol2 != NULL){
-            printf("Inside 3rd if\n");
+            // printf("Inside 3rd if\n");
             performOutputRedirection(input);
-            printf("I am here after o/p redirection\n");
+            // printf("I am here after o/p redirection\n");
             // display_prompt(prompt);
             continue;
 
