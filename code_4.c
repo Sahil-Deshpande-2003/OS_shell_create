@@ -6,17 +6,6 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <fcntl.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <fcntl.h>
-#include <unistd.h>
 #define MAX_STRING_SIZE 100
 #define MAX_INPUT_SIZE 1024
 #define MAX_ARG_SIZE 64
@@ -26,7 +15,28 @@
 char prompt[MAX_PATH_SIZE] = "\w$";
 char path[MAX_PATH_SIZE] = "/usr/bin:/bin:/sbin";
 
-// dekh
+void removeSpacesAndNewlines_modified(char *str) {
+    int length = strlen(str);
+    int i, j = 0;
+    int spaceCount = 0;
+
+    for (i = 0; i < length; i++) {
+        if (str[i] != ' ' && str[i] != '\n' && str[i] != '<' && str[i] != '>') {
+            str[j++] = str[i];
+            spaceCount = 0;  // Reset space count when a non-space character is encountered.
+        } else if (str[i] == ' ') {
+            spaceCount++;
+            if (spaceCount == 1) {
+                str[j++] = ' ';  // Add a single space after the first space.
+            }
+        }
+    }
+
+    str[j] = '\0';
+}
+
+
+
 void removeSpacesAndNewlines(char *str) {
     int length = strlen(str);
     int i, j = 0;
@@ -39,16 +49,7 @@ void removeSpacesAndNewlines(char *str) {
 
     str[j] = '\0';
 }
-// int isFileExistsInPromptDirectory(char *filename) {
-//     char full_path[MAX_PATH_SIZE];
-//     snprintf(full_path, sizeof(full_path), "%s/%s", prompt, filename);
-//     // printf("full_path=%s\n",full_path);
-//     if (access(full_path, F_OK) == 0) {
-//         return 1;  // File exists
-//     }
 
-//     return 0;  // File does not exist
-// }
 void Redirection(char *input) {
     // Tokenize the command to extract command, input file, and output file
 
@@ -77,10 +78,6 @@ void Redirection(char *input) {
         }
         removeSpacesAndNewlines(outputFile);
     }
-
-    // printf("Command:%s\n", command);
-    // printf("Input File:%s\n", inputFile ? inputFile : "(none)");
-    // printf("Output File:%s\n", outputFile ? outputFile : "(none)");
 
     pid_t pid = fork();
 
@@ -167,7 +164,6 @@ void performInputRedirection(char *input) {
             redirection_symbol++;
         }
         strcpy(file, redirection_symbol);
-        // printf("file=%s\n",file);
     } else {
         // No input redirection, use the entire input as the command
         strcpy(cmd, input);
@@ -215,15 +211,16 @@ void performOutputRedirection(char *input) {
         // Output redirection is present, extract the command and file
         *redirection_symbol = '\0';  // Separate the command
         strcpy(cmd, input); // combine karte waqt cmd has to be cat file1.txt
-        // printf("cmd=%s\n",cmd);
+   
         // Remove spaces from the command
-        removeSpacesAndNewlines(cmd);
+        removeSpacesAndNewlines(cmd); // UNCOMMENT KAR!!!
+        // removeSpacesAndNewlines_modified(cmd);
 
-        // printf("cmd=%s\n", cmd);
+        // printf("cmd=%s\n",cmd);
         strcpy(file, redirection_symbol + 1);
         removeSpacesAndNewlines(file);
-        // printf("file=%s\n", file);
         // printf("file=%s\n",file);
+
         pid_t pid = fork();
 
         if (pid == -1) {
@@ -233,6 +230,7 @@ void performOutputRedirection(char *input) {
             // Child process
 
             // Open a file for writing
+  
             int file_descriptor = open(file, O_WRONLY | O_CREAT | O_TRUNC, 0666);
             if (file_descriptor == -1) {
                 perror("Error opening file");
@@ -240,12 +238,14 @@ void performOutputRedirection(char *input) {
             }
 
             // Redirect stdout to the file
+            // printf("Before dup2\n");
             if (dup2(file_descriptor, fileno(stdout)) == -1) {
                 perror("Error redirecting stdout");
                 close(file_descriptor);  // Close the file descriptor before exiting
                 exit(EXIT_FAILURE);
             }
 
+            // printf("After dup2\n");
             // Close the file descriptor to allow the command to write to the redirected stdout
             close(file_descriptor);
 
@@ -262,9 +262,10 @@ void performOutputRedirection(char *input) {
 
             int status;
             waitpid(pid, &status, 0);
-
+            // printf("I am here1\n");
             // Restore the original stdout
             dup2(original_stdout, fileno(stdout));
+            // printf("I am here2\n");
 
             // Close the original stdout file descriptor
             close(original_stdout);
@@ -297,8 +298,7 @@ void print_path_contents() {
 }
 
 int custom_execvp(char *cmd, char **args) {
-    // printf("cmd=%s\n",cmd);
-    // printf("args=%s\n",*args);
+
     if (cmd[0] == '/') {
         execv(cmd, args);
     } else {
@@ -306,16 +306,16 @@ int custom_execvp(char *cmd, char **args) {
         char *path_copy = strdup(path);
 
         token = strtok(path_copy, ":");
-        // printf("token=%s\n",token);
+
         while (token != NULL) {
             char full_path[MAX_PATH_SIZE];
             snprintf(full_path, sizeof(full_path), "%s/%s", token, cmd);
-            // printf("full path=%s\n",full_path);
+
             if (access(full_path, X_OK) == 0) {
-                // printf("inside if\n");
+
                 execv(full_path, args);
             }
-            // printf("Life after if\n");
+
             token = strtok(NULL, ":");
         }
         free(path_copy);
@@ -327,7 +327,7 @@ int custom_execvp(char *cmd, char **args) {
 }
 
 void display_prompt(const char *custom_prompt) {
-    // printf("Accessing prompt1: %s\n", custom_prompt);
+
 
     if (custom_prompt[strlen(custom_prompt) - 2] != '$') {
         printf("%s $ ", custom_prompt);
@@ -345,15 +345,12 @@ void set_prompt(char *new_prompt) {
 
     if (strcmp(new_prompt, "\"\\w$\"") == 0) {
         getcwd(prompt, MAX_PATH_SIZE);
-        // printf("Reset marne par prompt = %s\n",prompt);
-        // display_prompt(prompt);
+
     } else {
          strcpy(prompt, new_prompt);
-        // printf("prompt after changign in set_prompt = %s\n",prompt);
-        // display_prompt(new_prompt);
+
     }
 
-    // snprintf(prompt, sizeof(prompt), "%s", new_prompt);
 }
 
 void set_path(char *new_path) {
@@ -374,7 +371,7 @@ void set_path(char *new_path) {
         strcat(path, token);
         strcat(path, ":");
 
-        printf("Updated PATH (set_path): %s\n", path);
+        // printf("Updated PATH (set_path): %s\n", path);
 
         token = strtok(NULL, ":");
     }
@@ -393,12 +390,9 @@ void execute_command(char **args) {
         return;
     }
 
-    // printf("Inside execute command\n");
     pid_t pid, wpid;
     int status;
 
-    // printf("Accessing prompt2: %s\n", prompt);
-    printf("Executing command with PATH: %s\n", path);
 
     if ((pid = fork()) == 0) {
         if (custom_execvp(args[0], args) == -1) {
@@ -416,14 +410,13 @@ void execute_command(char **args) {
 
 void extractCommandAndFilename(char *input, char **command, char **filename) {
     // Tokenize the input to extract command and filename
-    // printf("Inside func,input_1=%s\n",input);
+
     char *token = strtok(input, " \t\n");
-    // printf("Inside func,input_2=%s\n",input);
-    // printf("Inside func,token=%s\n",token);
+
     if (token != NULL) {
-        // printf("*command=%s\n",*command);
+
         *command = strdup(token);
-        // printf("Line after *command\n");
+
         token = strtok(NULL, " \t\n");
         if (token != NULL) {
             *filename = strdup(token);
@@ -442,11 +435,11 @@ int main() {
     char *args[MAX_ARG_SIZE];
     char *token;
     getcwd(prompt, MAX_PATH_SIZE);
-    // display_prompt(prompt);
+
     char cmd[MAX_CMD_SIZE];
     char file[MAX_FILE_SIZE];
     while (1) {
-        // printf("Printing prompt while loop ke 1st line me\n");
+
         display_prompt(prompt);
         if (fgets(input, MAX_INPUT_SIZE, stdin) == NULL || strcmp(input, "exit\n") == 0) {
             printf("Exiting shell...\n");
@@ -463,24 +456,20 @@ int main() {
 
 
         if (redirection_symbol1 != NULL) {
-            // printf("Inside 2nd if\n");
+
             performInputRedirection(input);
-            // printf("I am here after i/p redirection\n");
-            // display_prompt(prompt);
+
             continue;
         }
 
 
         if(redirection_symbol2 != NULL){
-            // printf("Inside 3rd if\n");
             performOutputRedirection(input);
-            // printf("I am here after o/p redirection\n");
-            // display_prompt(prompt);
+
             continue;
 
         }
 
-        // printf("input_initial=%s\n",input);
         char *command = "default_command";
         char *filename = "default_filename";
          
@@ -490,28 +479,22 @@ int main() {
         extractCommandAndFilename(input_copy,commandAddress,fileAddress);
          
         
-        // printf("command_final=%s\n",command); 
-        // printf("file_final=%s\n",filename); 
-        // printf("input_after_function_call=%s\n",input);
 
-    // printf("\n");
-    // display_prompt(prompt);
-        // free(input);
-    
 
-    int i = 0;
 
-    // printf("input=%s\n",input);
+
+        int i = 0;
+
         token = strtok(input, " \t\n");
-    // printf("token=%s\n",token);
+
         while (token != NULL && i < MAX_ARG_SIZE - 1) {
             args[i] = token;
-            // printf("args[i]=%s\n",args[i]);
+
             i++;
             token = strtok(NULL, " \t\n");
         }
         args[i] = NULL;
-        // printf("args=%s\n",args);
+
         if (i > 0) {
             if (strcmp(args[0], "cd") == 0) {
                 if (args[1] == NULL) {
@@ -521,11 +504,14 @@ int main() {
                         perror("chdir");
                     }
                 }
+                strcpy(prompt,args[1]);
+                
+
             } else if (strncmp(args[0], "PS1=", 4) == 0) {
                 set_prompt(args[0] + 4);
             } else if (strncmp(args[0], "PATH=", 5) == 0) {
                 set_path(args[0] + 5);
-                print_path_contents();
+                // print_path_contents();
             } else {
 
                 if (!isCommandValid(command)) {
@@ -533,21 +519,13 @@ int main() {
                         continue;
                     }
 
-                // if (filename!=NULL&& !isFileExistsInPromptDirectory(filename)) {
-
-                //     fprintf(stderr, "%s: File does not exist\n", filename);
-                //     // display_prompt(prompt);
-                //     continue;
-                // }
-                // printf("I am here\n");
+       
                 execute_command(args);
-                // printf("Printing prompt after checking if file and command are valid\n");
-                // display_prompt(prompt);
+   
             }
         } 
    
 
-    // free(input);  // Don't forget to free the allocated memory
     }
 
     free(input);
