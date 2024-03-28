@@ -67,6 +67,24 @@ char *find_cmd_by_pid(pid_t pid) {
     return cmd;
 }
 
+#define MAX_LINE_LENGTH 1024
+
+void grep(FILE *file, const char *pattern) {
+    printf("Hey!\n");
+    // printf("file inside grep func = %s\n",file);
+    // printf("pattern inside grep func = %s\n",pattern);
+    char line[MAX_LINE_LENGTH];
+    int line_number = 0;
+
+    while (fgets(line, MAX_LINE_LENGTH, file) != NULL) {
+        line_number++;
+        if (strstr(line, pattern) != NULL) {
+            printf("%s:%d:%s", pattern, line_number, line);
+        }
+    }
+}
+
+
 
 #define MAX_JOBS 100
 int num_jobs = 0;
@@ -92,6 +110,7 @@ int custom_execvp(char *cmd, char **args) {
         sleep(seconds);
         exit(EXIT_FAILURE);
     }
+
 
     if (cmd[0] == '/') {
         printf("Inside if\n");
@@ -119,7 +138,7 @@ int custom_execvp(char *cmd, char **args) {
                 if (strcmp(*args,"ls") == 0){
                     printf("Faint of Hope\n");
                 }
-                args[1] = NULL;
+                args[2] = NULL; // Ye 2 index hardcoded future me problem dega!!!
                 printf("args = %s\n",*args);
                 // printf("len = %ld\n",strlen(args));
 
@@ -409,6 +428,7 @@ void performInputRedirection(char *input) {
     char *redirection_symbol = strchr(input, '<');
 
     if (redirection_symbol != NULL) {
+        printf("< is not NULL \n");
         // Input redirection is present, extract the command and file
         *redirection_symbol = '\0';  // Separate the command
 
@@ -421,6 +441,7 @@ void performInputRedirection(char *input) {
         while (*redirection_symbol == ' ' || *redirection_symbol == '\t') {
             redirection_symbol++;
         }
+        printf("redirection_symbol = %s\n",redirection_symbol);
         strcpy(file, redirection_symbol);
     } else {
         // No input redirection, use the entire input as the command
@@ -716,7 +737,10 @@ int main() {
             break;
         }
 
-        printf("input = %s\n",input);
+   
+
+
+        // printf("input!!!!! = %s\n",input);
 
         char output_string[100];
 
@@ -791,6 +815,7 @@ int main() {
 
         while (token != NULL && i < MAX_ARG_SIZE - 1) {
             args[i] = token;
+            //  printf("args!!!!! = %s\n",args[i]);
 
             i++;
             token = strtok(NULL, " \t\n");
@@ -798,7 +823,7 @@ int main() {
         args[i] = NULL;
 
         
-
+       
       
 
         if (i > 0) {
@@ -813,7 +838,15 @@ int main() {
                 strcpy(prompt,args[1]);
                 
 
-            } else if (strncmp(args[0], "PS1=", 4) == 0) {
+            }else if (strcmp(args[0], "grep") == 0) {
+                FILE *file = fopen(args[2], "r");
+                if (file == NULL) {
+                   perror("Error");
+                    return 1;
+    }
+                grep(file, args[1]);
+            } 
+             else if (strncmp(args[0], "PS1=", 4) == 0) {
                 set_prompt(args[0] + 4);
             } else if (strncmp(args[0], "PATH=", 5) == 0) {
                 set_path(args[0] + 5);
