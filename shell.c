@@ -17,6 +17,30 @@ char prompt[MAX_PATH_SIZE] = "\w$";
 char path[MAX_PATH_SIZE] = "/usr/bin:/bin:/sbin";
  volatile sig_atomic_t foreground_pid = -1;
 #define CMD_SIZE 1024
+#define MAX_INPUT_SIZE 1024
+#define MAX_HISTORY_SIZE 100
+char history[MAX_HISTORY_SIZE][MAX_INPUT_SIZE];
+int history_count = 0;
+
+void add_to_history(const char *cmd) {
+    printf("Inside add_to_history cmd = %s\n",cmd);
+    if (history_count < MAX_HISTORY_SIZE) {
+        strcpy(history[history_count], cmd);
+        history_count++;
+    } else {
+        // If history is full, remove the oldest command
+        for (int i = 1; i < MAX_HISTORY_SIZE; i++) {
+            strcpy(history[i - 1], history[i]);
+        }
+        strcpy(history[MAX_HISTORY_SIZE - 1], cmd);
+    }
+}
+
+void display_history() {
+    for (int i = 0; i < history_count; i++) {
+        printf("%d: %s\n", i + 1, history[i]);
+    }
+}
 
 void removeSpacesAndNewlines(char *str) {
     int length = strlen(str);
@@ -747,7 +771,7 @@ int main() {
         }
 
    
-
+        add_to_history(input);
 
         // printf("input!!!!! = %s\n",input);*
 
@@ -955,7 +979,9 @@ int main() {
             } 
              else if (strncmp(args[0], "PS1=", 4) == 0) {
                 set_prompt(args[0] + 4);
-            } else if (strncmp(args[0], "PATH=", 5) == 0) {
+            }else if (strcmp(args[0], "history") == 0) {
+            display_history();
+        } else if (strncmp(args[0], "PATH=", 5) == 0) {
                 set_path(args[0] + 5);
                 // print_path_contents();
             }else if (strcmp(args[0], "fg") == 0){
