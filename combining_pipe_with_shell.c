@@ -23,7 +23,7 @@ char history[MAX_HISTORY_SIZE][MAX_INPUT_SIZE];
 int history_count = 0;
 
 void add_to_history(const char *cmd) {
-    printf("Inside add_to_history cmd = %s\n",cmd);
+    // printf("Inside add_to_history cmd = %s\n",cmd);
     if (history_count < MAX_HISTORY_SIZE) {
         strcpy(history[history_count], cmd);
         history_count++;
@@ -132,7 +132,7 @@ jobs background_jobs[MAX_JOBS];
 
 int custom_execvp(char *cmd, char **args) {
 
-    printf("Inside custom_execvp\n");
+    // printf("Inside custom_execvp\n");
 
      if (strcmp(args[0], "sleep") == 0) {
         if (args[1] == NULL) {
@@ -146,10 +146,10 @@ int custom_execvp(char *cmd, char **args) {
 
 
     if (cmd[0] == '/') {
-        printf("Inside if\n");
+        // printf("Inside if\n");
         execv(cmd, args);
     } else {
-        printf("Inside else\n");
+        // printf("Inside else\n");
         char *token;
         char *path_copy = strdup(path);
 
@@ -161,18 +161,13 @@ int custom_execvp(char *cmd, char **args) {
             printf("full_path = %s\n",full_path);
             if (access(full_path, X_OK) == 0) {
 
-                printf("Inside if\n");
+                // printf("Inside if\n");
                 removeSpacesAndNewlines(*args);
                 removeSpacesAndNewlines(full_path);
-                if (strcmp(full_path,"/usr/bin/ls") == 0){
-                    printf("Some Hope\n");
-                }
+                
 
-                if (strcmp(*args,"ls") == 0){
-                    printf("Faint of Hope\n");
-                }
-                args[2] = NULL; // Ye 2 index hardcoded future me problem dega!!!
-                printf("args = %s\n",*args);
+                args[2] = NULL; // Ye 2 index hardcoded future me problem dega!!!!!!!
+                // printf("args = %s\n",*args);
                 // printf("len = %ld\n",strlen(args));
 
                 int exec_result = execv(full_path, args);
@@ -225,15 +220,15 @@ void execute_command(char **args,int is_background) {
 
    
 
-    printf("Inside execute command func\n");
-    printf("Backgroudn = %d\n",is_background);
-    printf("Command inside execute_command=%s\n",args[0]);
+    // printf("Inside execute command func\n");
+    // printf("Backgroudn = %d\n",is_background);
+    // printf("Command inside execute_command=%s\n",args[0]);
     pid_t pid, wpid;
     int status;
 
 
     if ((pid = fork()) == 0) {
-        printf("Testing...\n");
+        // printf("Testing...\n");
         if (!is_background && custom_execvp(args[0], args) == -1) {
             perror("Command not found");
             exit(EXIT_FAILURE);
@@ -245,7 +240,7 @@ void execute_command(char **args,int is_background) {
             // char *command = find_cmd_buty_pid(pid);
             // if (strcmp(command,"./a.out")!=0) foreground_pid = pid;
             // isff (foreground_pid!=-1) printf("command put in background = %s",find_cmd_by_pid(foreground_pid));
-            printf("Hey?\n");
+            // printf("Hey?\n");
             wpid = waitpid(pid, &status, WUNTRACED);
         } while (!WIFEXITED(status) && !WIFSIGNALED(status) && !is_background);
     }
@@ -298,7 +293,7 @@ void execute_fg_command(){
         return;
     }
 
-    printf("Accessed job index = %d\n",num_jobs - 1);
+    // printf("Accessed job index = %d\n",num_jobs - 1);
 
     char *command = background_jobs[num_jobs - 1].command;
     int is_background = 0;
@@ -320,15 +315,15 @@ void add_process_to_background(pid_t pid,char *command){
         return;
     }
 
-    printf("Received pid = %d\n",pid);
+    // printf("Received pid = %d\n",pid);
 
     background_jobs[num_jobs].job_id = num_jobs + 1;
     background_jobs[num_jobs].pid = pid;
     strcpy(background_jobs[num_jobs].command, command);
-    printf("Job index = %d\n",num_jobs);
-    printf("Copied command = %s\n",background_jobs[num_jobs].command);
+    // printf("Job index = %d\n",num_jobs);
+    // printf("Copied command = %s\n",background_jobs[num_jobs].command);
     num_jobs++;
-    printf("Value of num_jobs = %d\n",num_jobs);
+    // printf("Value of num_jobs = %d\n",num_jobs);
     printf("Added to Background[%ld] %d %s\n", background_jobs[num_jobs - 1].job_id, background_jobs[num_jobs - 1].pid,background_jobs[num_jobs-1].command);
     //suspend_process(pid); Process should already be suspended
     resume_process_in_background(pid);
@@ -461,7 +456,7 @@ void performInputRedirection(char *input) {
     char *redirection_symbol = strchr(input, '<');
 
     if (redirection_symbol != NULL) {
-        printf("< is not NULL \n");
+        // printf("< is not NULL \n");
         // Input redirection is present, extract the command and file
         *redirection_symbol = '\0';  // Separate the command
 
@@ -474,7 +469,7 @@ void performInputRedirection(char *input) {
         while (*redirection_symbol == ' ' || *redirection_symbol == '\t') {
             redirection_symbol++;
         }
-        printf("redirection_symbol = %s\n",redirection_symbol);
+        // printf("redirection_symbol = %s\n",redirection_symbol);
         strcpy(file, redirection_symbol);
     } else {
         // No input redirection, use the entire input as the command
@@ -639,6 +634,8 @@ void set_prompt(char *new_prompt) {
         printf("Invalid PS1: Missing prompt string\n");
         return;
     }
+    
+    printf("new_prompt = %s\n",new_prompt);
 
     if (strcmp(new_prompt, "\"\\w$\"") == 0) {
         getcwd(prompt, MAX_PATH_SIZE);
@@ -656,6 +653,8 @@ void set_path(char *new_path) {
         return;
     }
 
+    printf("Curr path = %s\n",new_path);
+
     char *token;
     char *new_path_copy = strdup(new_path);
 
@@ -668,7 +667,7 @@ void set_path(char *new_path) {
         strcat(path, token);
         strcat(path, ":");
 
-        // printf("Updated PATH (set_path): %s\n", path);
+        printf("Updated PATH (set_path): %s\n", path);
 
         token = strtok(NULL, ":");
     }
@@ -710,7 +709,7 @@ void extractCommandAndFilename(char *input, char **command, char **filename) {
 
 
 int find_pid(char *command) {
-    printf("command received by find_pid = %s\n",command);
+    // printf("command received by find_pid = %s\n",command);
     removeSpacesAndNewlines(command);
 
     FILE *fp;
@@ -730,7 +729,7 @@ int find_pid(char *command) {
     // Read the output of ps command line by line
     while (fgets(line, sizeof(line), fp) != NULL) {
         // Check if the command matches the desired command
-        printf("line = %s\n",line);
+        // printf("line = %s\n",line);
         if (strstr(line, command) != NULL) {
             // Extract the PID from the line
             sscanf(line, "%s", pid);
@@ -915,7 +914,7 @@ int main() {
 
         execute_command(&input,is_background);
 
-        printf("i/p being passed to find_pid = %s\n",input);
+        // printf("i/p being passed to find_pid = %s\n",input);
 
         int pid_passing  = find_pid(input);
 
@@ -969,7 +968,7 @@ int main() {
 
         while (token != NULL && i < MAX_ARG_SIZE - 1) {
             args[i] = token;
-             printf("args!!!!! = %s\n",args[i]);
+            //  printf("args!!!!! = %s\n",args[i]);
 
             i++;
             token = strtok(NULL, " \t\n");
@@ -1006,6 +1005,7 @@ int main() {
             }else if (strcmp(args[0], "history") == 0) {
             display_history();
         } else if (strncmp(args[0], "PATH=", 5) == 0) {
+            printf("Before calling set_path, path = %s\n",path);
                 set_path(args[0] + 5);
                 // print_path_contents();
             }else if (strcmp(args[0], "fg") == 0){
@@ -1051,7 +1051,7 @@ int main() {
 
                     // int is_background = 0;
 
-                    printf("About to call execute_command inside int main\n");
+                    // printf("About to call execute_command inside int main\n");
 
        
                 execute_command(args,is_background);
