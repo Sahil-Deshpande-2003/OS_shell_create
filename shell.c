@@ -71,8 +71,17 @@ char *find_cmd_by_pid(pid_t pid) {
 
 void grep(FILE *file, const char *pattern) {
     printf("Hey!\n");
-    // printf("file inside grep func = %s\n",file);
-    // printf("pattern inside grep func = %s\n",pattern);
+
+    // char line[MAX_LINE_LENGTH];
+    // int line_number = 0;
+
+    // while (fgets(line, MAX_LINE_LENGTH, file) != NULL) {
+    //     line_number++;
+    //     if (strstr(line, pattern) != NULL) {
+    //         printf("%s:%d:%s", pattern, line_number, line);
+    //     }
+    // }
+
     char line[MAX_LINE_LENGTH];
     int line_number = 0;
 
@@ -740,7 +749,104 @@ int main() {
    
 
 
-        // printf("input!!!!! = %s\n",input);
+        // printf("input!!!!! = %s\n",input);*
+
+        char *pipe_pos = strchr(input,'|');
+
+        if (pipe_pos!=NULL){
+             char *cmd1, *cmd2;
+    char *args1[MAX_CMD_SIZE], *args2[MAX_CMD_SIZE];
+    int pipefd[2];
+    pid_t pid1, pid2;
+
+    // printf("Enter command: ");
+    // fgets(input, MAX_CMD_SIZE, stdin);
+    input[strcspn(input, "\n")] = '\0'; // Remove trailing newline
+
+    // Split command at pipe symbol
+    cmd1 = strtok(input, "|");
+    // printf("cmd1 = %s\n",cmd1);
+    cmd2 = strtok(NULL, "|");
+    // printf("cmd2 = %s\n",cmd2);
+
+    // removeSpacesAndNewlines(cmd2);
+    // printf("NEW cmd2 = %s\n",cmd2);
+
+    // Tokenize command strings
+    char *token;
+    int i = 0;
+    token = strtok(cmd1, " ");
+    while (token != NULL) {
+        args1[i] = token;
+        // printf("args1[i] = %s\n",args1[i]);
+        i++;
+        token = strtok(NULL, " ");
+    }
+    args1[i] = NULL;
+
+    i = 0;
+    token = strtok(cmd2, " ");
+    while (token != NULL) {
+        args2[i] = token;
+        // printf("args2[i] = %s\n",args2[i]);
+        i++;
+        token = strtok(NULL, " ");
+    }
+    args2[i] = NULL;
+
+    // Create pipe
+    if (pipe(pipefd) == -1) {
+        perror("pipe");
+        exit(EXIT_FAILURE);
+    }
+
+    // // Fork first child process
+    pid1 = fork();
+    if (pid1 == -1) {
+        perror("fork");
+        exit(EXIT_FAILURE);
+    } else if (pid1 == 0) {
+        // Child process 1
+        close(pipefd[0]); // Close unused read end of the pipe
+
+    //     // The standard output (STDOUT_FILENO) is redirected to the write end of the pipe (pipefd[1]) using dup2(). This means that any output from cmd1 will be written to the pipe instead of the terminal.
+
+        dup2(pipefd[1], STDOUT_FILENO); // Redirect stdout to write end of the pipe
+        close(pipefd[1]); // Close write end of the pipe
+        execvp(args1[0], args1);
+        perror("execvp");
+        exit(EXIT_FAILURE);
+    }
+
+    // // Fork second child process
+    pid2 = fork();
+    if (pid2 == -1) {
+        perror("fork");
+        exit(EXIT_FAILURE);
+    } else if (pid2 == 0) {
+        // Child process 2
+        close(pipefd[1]); // Close unused write end of the pipe
+
+        // The standard input (STDIN_FILENO) is redirected to the read end of the pipe (pipefd[0]) using dup2(). This means that cmd2 will read input from the pipe instead of the terminal.
+
+        dup2(pipefd[0], STDIN_FILENO); // Redirect stdin to read end of the pipe
+        close(pipefd[0]); // Close read end of the pipe
+        execvp(args2[0], args2);
+        perror("execvp");
+        exit(EXIT_FAILURE);
+    }
+
+    // // Close pipe in parent process
+    close(pipefd[0]);
+    close(pipefd[1]);
+
+    // Wait for child processes to finish
+    wait(NULL);
+    wait(NULL);
+
+   continue;
+
+        }
 
         char output_string[100];
 
@@ -815,7 +921,7 @@ int main() {
 
         while (token != NULL && i < MAX_ARG_SIZE - 1) {
             args[i] = token;
-            //  printf("args!!!!! = %s\n",args[i]);
+             printf("args!!!!! = %s\n",args[i]);
 
             i++;
             token = strtok(NULL, " \t\n");
@@ -844,6 +950,7 @@ int main() {
                    perror("Error");
                     return 1;
     }
+    // grep(stdin, args[1]);
                 grep(file, args[1]);
             } 
              else if (strncmp(args[0], "PS1=", 4) == 0) {
