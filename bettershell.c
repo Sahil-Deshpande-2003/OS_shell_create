@@ -66,42 +66,7 @@ void removeSpacesAndNewlines(char *str) {
     str[j] = '\0';
 }
 
-// not called anywhere
 
-char *find_cmd_by_pid(pid_t pid) {
-    char *cmd = malloc(CMD_SIZE); // Dynamically allocate memory
-    if (cmd == NULL) {
-        printf("Error: Memory allocation failed.\n");
-        return NULL;
-    }
-    
-    FILE *fp;
-    char path[40];
-
-    // Create path for the command
-    sprintf(path, "/proc/%d/cmdline", pid);
-
-    // Open the cmdline file for the process
-    fp = fopen(path, "r");
-    if (fp == NULL) {
-        printf("Error: Process with PID %d not found.\n", pid);
-        free(cmd); // Free memory before returning NULL
-        return NULL;
-    }
-
-    // Read the command from the file
-    if (fgets(cmd, CMD_SIZE, fp) != NULL) {
-       
-    } else {
-       
-        free(cmd); 
-        fclose(fp);
-        return NULL;
-    }
-
-    fclose(fp);
-    return cmd;
-}
 
 // check if useful
 
@@ -244,25 +209,6 @@ void execute_command(char **args,int is_background) {
         return;
     }
 
-    // printf("ABUOT TO PRINT ARGS IN EXEC COMMAND\n");
-
-    // int i = 0;
-
-    // while(args[i]!=NULL){
-        // printf("%s\n",args[i]);
-        // i++;
-    // }
-
-    // removeSpacesAndNewlines(args[0]);
-
-    // printf("args[0] = %s\n",args[0]);
-
-    // if (strcmp(args[0],"gedit")!=0){
-    //     printf("Dead");
-    // }
-
-    // else printf("Hope..");
-
 
     pid_t pid, wpid;
     int status;
@@ -337,50 +283,9 @@ void add_process_to_background(pid_t pid,char *command){
     printf("Added to Background[%ld] %d %s\n", background_jobs[num_jobs - 1].job_id, background_jobs[num_jobs - 1].pid,background_jobs[num_jobs-1].command);
 }
 
-// not called!!!
-
-void remove_process_from_background(pid_t pid){
 
 
-    for (int i = 0; i < num_jobs; i++)
-    {
 
-        if (pid == background_jobs[i].pid){
-
-            background_jobs[i].running_in_background = 0;
-            num_jobs--;
-            break;
-        }
-
-    }
-
-    return;
-    
-
-}
-
-
-// not called!!
-
-void removeSpacesAndNewlines_modified(char *str) {
-    int length = strlen(str);
-    int i, j = 0;
-    int spaceCount = 0;
-
-    for (i = 0; i < length; i++) {
-        if (str[i] != ' ' && str[i] != '\n' && str[i] != '<' && str[i] != '>') {
-            str[j++] = str[i];
-            spaceCount = 0;  // Reset space count when a non-space character is encountered.
-        } else if (str[i] == ' ') {
-            spaceCount++;
-            if (spaceCount == 1) {
-                str[j++] = ' ';  // Add a single space after the first space.
-            }
-        }
-    }
-
-    str[j] = '\0';
-}
 
 
 
@@ -548,7 +453,7 @@ void performOutputRedirection(char *input) {
    
         // Remove spaces from the command
         removeSpacesAndNewlines(cmd); // UNCOMMENT KAR!!!
-        // removeSpacesAndNewlines_modified(cmd);
+        
 
         // printf("cmd=%s\n",cmd);
         strcpy(file, redirection_symbol + 1);
@@ -674,7 +579,6 @@ void set_prompt(char *new_prompt) {
         return;
     }
     
-    // printf("new_prompt = %s\n",new_prompt);
 
     //  if new_prompt is equal to "\w$" it retrieves the current working directory and stores it in the variable prompt.
 
