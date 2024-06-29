@@ -1,9 +1,0 @@
-a.out
-code
-code_1.c
-code_2.c
-code_3.c
-code_4.c
-dir.c
-file1.txt
-greeting.txt
